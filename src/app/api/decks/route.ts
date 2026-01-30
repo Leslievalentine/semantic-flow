@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
-import { supabase, Deck } from '@/lib/supabase'
+import { Deck } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 export async function GET() {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         // 检查 Supabase 配置
         if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
             return NextResponse.json(
@@ -11,10 +23,11 @@ export async function GET() {
             )
         }
 
-        // 获取所有公共卡组
+        // 获取当前用户的卡组
         const { data: decks, error } = await supabase
             .from('decks')
             .select('*')
+            .eq('user_id', currentUser.id)
             .order('created_at', { ascending: false })
 
         if (error) {

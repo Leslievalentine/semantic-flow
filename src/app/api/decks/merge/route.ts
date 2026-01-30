@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 // 合并两个 deck
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
         const { sourceDeckId, targetDeckId } = body as {
             sourceDeckId: string
@@ -24,16 +35,17 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 验证两个 deck 都存在
+        // 验证两个 deck 都存在且属于当前用户
         const { data: sourceDeck, error: sourceError } = await supabase
             .from('decks')
             .select('id, title')
             .eq('id', sourceDeckId)
+            .eq('user_id', currentUser.id)
             .single()
 
         if (sourceError || !sourceDeck) {
             return NextResponse.json(
-                { success: false, error: 'Source deck not found' },
+                { success: false, error: 'Source deck not found or access denied' },
                 { status: 404 }
             )
         }
@@ -42,11 +54,12 @@ export async function POST(request: NextRequest) {
             .from('decks')
             .select('id, title')
             .eq('id', targetDeckId)
+            .eq('user_id', currentUser.id)
             .single()
 
         if (targetError || !targetDeck) {
             return NextResponse.json(
-                { success: false, error: 'Target deck not found' },
+                { success: false, error: 'Target deck not found or access denied' },
                 { status: 404 }
             )
         }
@@ -56,6 +69,8 @@ export async function POST(request: NextRequest) {
             .from('cards')
             .update({ deck_id: targetDeckId })
             .eq('deck_id', sourceDeckId)
+            // RLS 可能会阻止修改不属于自己的卡片，这里添加明确的 user_id 检查
+            .eq('user_id', currentUser.id)
 
         if (updateError) {
             console.error('Failed to move cards:', updateError)
@@ -70,6 +85,7 @@ export async function POST(request: NextRequest) {
             .from('decks')
             .delete()
             .eq('id', sourceDeckId)
+            .eq('user_id', currentUser.id)
 
         if (deleteError) {
             console.error('Failed to delete source deck:', deleteError)

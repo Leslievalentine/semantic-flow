@@ -1,7 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
-// Supabase 客户端 - 服务端使用
-export const supabase = createClient(
+// Supabase 客户端 - 浏览器端使用
+// 使用 createBrowserClient 确保 Cookie 正确同步
+export const supabase = createBrowserClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
@@ -27,6 +28,10 @@ export interface Card {
   context_hint: string | null
   anchor_data: AnchorItem[]
   created_at: string
+  // Memory Engine 扩展字段
+  mastery_level?: 'new' | 'red' | 'yellow' | 'green'
+  last_score?: number | null
+  next_review_at?: string | null
 }
 
 export interface Review {

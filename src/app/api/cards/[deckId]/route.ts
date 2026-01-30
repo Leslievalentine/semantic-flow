@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, Card } from '@/lib/supabase'
+import { Card } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ deckId: string }> }
 ) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const { deckId } = await params
 
         if (!deckId) {
@@ -15,16 +27,17 @@ export async function GET(
             )
         }
 
-        // 获取卡组信息
+        // 获取卡组信息（验证属于当前用户）
         const { data: deck, error: deckError } = await supabase
             .from('decks')
             .select('*')
             .eq('id', deckId)
+            .eq('user_id', currentUser.id)
             .single()
 
         if (deckError || !deck) {
             return NextResponse.json(
-                { success: false, error: 'Deck not found' },
+                { success: false, error: 'Deck not found or access denied' },
                 { status: 404 }
             )
         }

@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 // 删除 deck
 export async function DELETE(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const { searchParams } = new URL(request.url)
         const deckId = searchParams.get('id')
 
@@ -11,6 +22,21 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json(
                 { success: false, error: 'Deck ID is required' },
                 { status: 400 }
+            )
+        }
+
+        // 验证 deck 属于当前用户
+        const { data: deck, error: fetchError } = await supabase
+            .from('decks')
+            .select('id')
+            .eq('id', deckId)
+            .eq('user_id', currentUser.id)
+            .single()
+
+        if (fetchError || !deck) {
+            return NextResponse.json(
+                { success: false, error: 'Deck not found or access denied' },
+                { status: 404 }
             )
         }
 
@@ -33,6 +59,7 @@ export async function DELETE(request: NextRequest) {
             .from('decks')
             .delete()
             .eq('id', deckId)
+            .eq('user_id', currentUser.id)
 
         if (deckError) {
             console.error('Failed to delete deck:', deckError)
@@ -58,6 +85,17 @@ export async function DELETE(request: NextRequest) {
 // 重命名 deck
 export async function PATCH(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
         const { deckId, newTitle } = body as {
             deckId: string
@@ -77,6 +115,7 @@ export async function PATCH(request: NextRequest) {
             .from('decks')
             .update({ title: newTitle.trim() })
             .eq('id', deckId)
+            .eq('user_id', currentUser.id)
             .select()
             .single()
 
@@ -93,7 +132,7 @@ export async function PATCH(request: NextRequest) {
         if (!deck) {
             console.error('No deck returned after update')
             return NextResponse.json(
-                { success: false, error: 'Deck not found or update failed' },
+                { success: false, error: 'Deck not found or access denied' },
                 { status: 404 }
             )
         }
@@ -114,10 +153,20 @@ export async function PATCH(request: NextRequest) {
 // 手动创建空 deck
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
-        const { title, userId } = body as {
+        const { title } = body as {
             title: string
-            userId?: string
         }
 
         if (!title?.trim()) {
@@ -131,7 +180,7 @@ export async function POST(request: NextRequest) {
             .from('decks')
             .insert({
                 title: title.trim(),
-                user_id: userId || null,
+                user_id: currentUser.id,
                 is_custom: true,
             })
             .select()

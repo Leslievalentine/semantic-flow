@@ -3,8 +3,8 @@ import { createDeepSeek } from '@ai-sdk/deepseek'
 // DeepSeek API 配置 - 使用官方 @ai-sdk/deepseek 包
 // 严禁使用 gpt-4o，必须使用 deepseek-chat
 export const deepseek = createDeepSeek({
-    apiKey: process.env.OPENAI_API_KEY!,
-    // baseURL 默认为 https://api.deepseek.com/v1
+  apiKey: process.env.OPENAI_API_KEY!,
+  // baseURL 默认为 https://api.deepseek.com/v1
 })
 
 // 模型名称常量
@@ -45,31 +45,36 @@ export const SEMANTIC_JUDGE_PROMPT = `你是一位友善但专业的英语写作
 }`
 
 // AI 卡组生成器系统提示词 - 生成简短句子版本
-export const DECK_GENERATOR_PROMPT = `你是一位专业的 IELTS 内容创作者，专注于生成简洁有力的翻译练习材料。
+// AI 卡组生成器系统提示词 - B2-C1 地道表达/母语直觉版
+export const DECK_GENERATOR_PROMPT = `你是一位专注于 "Native Precision"（母语级精准度）的英语写作教练。
 
-根据用户提供的主题，生成 5 张适合初中级学习者的翻译卡片。
+根据用户提供的主题，生成 5 张 B2-C1 级别的翻译练习卡片。
 
-**重要要求：**
-1. "chinese_concept" 应该是**简短的中文句子**（10-20个汉字为宜）
-   - ❌ 错误：长达 40+ 字的复合句
-   - ✅ 正确："过度使用手机会损害视力" 或 "合理安排时间至关重要"
-2. 每个句子应该聚焦于**一个核心观点**，而非多个从句
-3. "context_hint" 简短描述使用场景（如 "Health Argument", "Time Management"）
-4. "anchor_data" 必须包含至少 2 个高质量的英文翻译版本
+**核心原则：**
+1. **严格的话题一致性 (CRITICAL)**：
+   - 生成的所有内容（标题、句子、语境）必须**严格紧扣**用户输入的主题。
+   - 严禁生成通用职场英语或生活英语，除非用户主题就是这些。
+   - 标题必须反映具体主题（例如用户输入 "Climate Change"，标题不能是 "Advanced Writing"，必须是 "Climate Change Perspectives"）。
 
-使用高级但常见的词汇，例如：detrimental, essential, crucial, significant, beneficial 等。
-**避免**生成过长或语法复杂的句子。
+2. **地道自然 (B2-C1)**：
+   - 使用母语者常用的搭配 (Collocations) 和自然句式。
+   - 拒绝简单的 SVO 结构，也拒绝过于生僻的炫技词汇。
+   - 句子长度适中（15-30词），逻辑流畅。
 
-只返回有效的 JSON，格式如下：
+3. **Anchor Data**：
+   - "Natural": 地道自然的表达。
+   - "Formal": 稍正式/书面化的表达。
+
+**JSON 格式要求：**
 {
-  "deck_title": "主题相关的简短标题",
+  "deck_title": "严格基于用户主题的标题 (e.g. 'Climate Change & Policy')",
   "cards": [
     {
-      "chinese_concept": "简短中文句子（10-20字）",
-      "context_hint": "场景标签",
+      "chinese_concept": "中文译文",
+      "context_hint": "具体的语境 (e.g., 'Argument', 'Description', 'Analysis')",
       "anchor_data": [
-        { "text": "English translation 1", "tag": "Formal" },
-        { "text": "English translation 2", "tag": "Academic" }
+        { "text": "Natural version...", "tag": "Natural" },
+        { "text": "Formal version...", "tag": "Formal" }
       ]
     }
   ]
@@ -77,24 +82,24 @@ export const DECK_GENERATOR_PROMPT = `你是一位专业的 IELTS 内容创作�
 
 // 评估结果类型
 export interface EvaluationResult {
-    judgment: {
-        status: 'PASS' | 'REVIEW' | 'FAIL'
-        score: number
-    }
-    feedback: {
-        critique: string
-        gap_analysis: string
-    }
+  judgment: {
+    status: 'PASS' | 'REVIEW' | 'FAIL'
+    score: number
+  }
+  feedback: {
+    critique: string
+    gap_analysis: string
+  }
 }
 
 // 生成的卡片类型
 export interface GeneratedCard {
-    chinese_concept: string
-    context_hint: string
-    anchor_data: { text: string; tag: string }[]
+  chinese_concept: string
+  context_hint: string
+  anchor_data: { text: string; tag: string }[]
 }
 
 export interface GeneratedDeck {
-    deck_title: string
-    cards: GeneratedCard[]
+  deck_title: string
+  cards: GeneratedCard[]
 }

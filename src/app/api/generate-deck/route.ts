@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { deepseek, MODEL_NAME, DECK_GENERATOR_PROMPT, GeneratedDeck } from '@/lib/ai'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // 生成的卡组 Schema
 const GeneratedDeckSchema = z.object({
@@ -41,11 +42,11 @@ function calculateSimilarity(str1: string, str2: string): number {
     if (union.size === 0) return 0
 
     // 检查数字是否匹配（如 task 1 vs task 2）
-    const nums1 = s1.match(/\d+/g) || []
-    const nums2 = s2.match(/\d+/g) || []
+    const nums1: string[] = s1.match(/\d+/g) || []
+    const nums2: string[] = s2.match(/\d+/g) || []
     if (nums1.length > 0 && nums2.length > 0) {
         // 如果两边都有数字但数字不同，不应合并
-        const hasMatchingNumber = nums1.some(n => nums2.includes(n))
+        const hasMatchingNumber = nums1.some((n: string) => nums2.includes(n))
         if (!hasMatchingNumber) {
             return 0 // 数字不匹配，不合并
         }
@@ -54,11 +55,12 @@ function calculateSimilarity(str1: string, str2: string): number {
     return intersection.size / union.size
 }
 
-// 查找相似的现有卡组
-async function findSimilarDeck(topic: string, generatedTitle: string): Promise<{ id: string; title: string } | null> {
+// 查找相似的现有卡组（仅查找当前用户的卡组）
+async function findSimilarDeck(supabase: SupabaseClient, topic: string, generatedTitle: string, userId: string): Promise<{ id: string; title: string } | null> {
     const { data: decks, error } = await supabase
         .from('decks')
         .select('id, title')
+        .eq('user_id', userId)
 
     if (error || !decks) return null
 
@@ -83,10 +85,23 @@ async function findSimilarDeck(topic: string, generatedTitle: string): Promise<{
 
 export async function POST(request: NextRequest) {
     try {
+        // 创建服务端 Supabase 客户端（包含 Auth Context）
+        const supabase = await createServerSupabaseClient()
+
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            console.error('Auth error:', authError)
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
-        const { topic, userId, deckId, autoMerge = true } = body as {
+        const { topic, deckId, autoMerge = true } = body as {
             topic: string
-            userId?: string
             deckId?: string // 如果提供，则追加到现有卡组
             autoMerge?: boolean // 是否自动合并到相似话题
         }
@@ -98,33 +113,23 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        console.log('Generating cards for topic:', topic, 'deckId:', deckId, 'autoMerge:', autoMerge)
+        console.log('Generating cards for topic:', topic, 'deckId:', deckId)
 
-        // 调用 DeepSeek 生成卡片
-        let generatedDeck: GeneratedDeck
-        try {
-            const result = await generateObject({
-                model: deepseek(MODEL_NAME),
-                schema: GeneratedDeckSchema,
-                system: DECK_GENERATOR_PROMPT,
-                prompt: `请为以下主题生成 5 张 C1 级别的翻译练习卡片：\n\n主题：${topic}`,
-            })
-            generatedDeck = result.object as GeneratedDeck
-        } catch (aiError) {
-            console.error('AI generation error:', aiError)
-            return NextResponse.json(
-                { success: false, error: `AI generation failed: ${aiError instanceof Error ? aiError.message : 'Unknown error'}` },
-                { status: 500 }
-            )
-        }
+        // 调用 AI 生成卡组内容
+        const { object: generatedDeck } = await generateObject({
+            model: deepseek(MODEL_NAME),
+            schema: GeneratedDeckSchema,
+            system: DECK_GENERATOR_PROMPT,
+            prompt: `User Topic: "${topic}"\n\nPlease generate a deck strictly focused on this topic.`,
+        })
 
+        // 数据库操作
         let targetDeckId = deckId
         let deckTitle = generatedDeck.deck_title
-        let mergedInto: string | null = null
+        let mergedInto: string | undefined
 
-        // 如果是追加模式，使用现有卡组
+        // 如果提供了 deckId，验证其存在性
         if (deckId) {
-            // 验证卡组存在
             const { data: existingDeck, error: fetchError } = await supabase
                 .from('decks')
                 .select('id, title')
@@ -142,7 +147,7 @@ export async function POST(request: NextRequest) {
             deckTitle = existingDeck.title
         } else if (autoMerge) {
             // 自动检测相似话题并合并
-            const similarDeck = await findSimilarDeck(topic, generatedDeck.deck_title)
+            const similarDeck = await findSimilarDeck(supabase, topic, generatedDeck.deck_title, currentUser.id)
             if (similarDeck) {
                 console.log('Found similar deck:', similarDeck.title)
                 targetDeckId = similarDeck.id
@@ -157,14 +162,15 @@ export async function POST(request: NextRequest) {
                 .from('decks')
                 .insert({
                     title: generatedDeck.deck_title,
-                    user_id: userId || null,
+                    user_id: currentUser.id,
                     is_custom: false,
                 })
                 .select()
                 .single()
 
             if (deckError || !newDeck) {
-                console.error('Deck creation error:', deckError)
+                console.error('Deck creation error object:', JSON.stringify(deckError))
+                console.error('Deck creation error message:', deckError?.message)
                 return NextResponse.json(
                     { success: false, error: `Failed to create deck: ${deckError?.message || 'Unknown'}` },
                     { status: 500 }
@@ -178,6 +184,7 @@ export async function POST(request: NextRequest) {
         // 批量插入卡片
         const cardsToInsert = generatedDeck.cards.map((card) => ({
             deck_id: targetDeckId,
+            user_id: currentUser.id,
             chinese_concept: card.chinese_concept,
             context_hint: card.context_hint,
             anchor_data: card.anchor_data,
@@ -187,30 +194,24 @@ export async function POST(request: NextRequest) {
 
         if (cardsError) {
             console.error('Cards creation error:', cardsError)
-            // 如果是新创建的卡组且不是追加模式，回滚
-            if (!deckId && !mergedInto) {
-                await supabase.from('decks').delete().eq('id', targetDeckId)
-            }
             return NextResponse.json(
-                { success: false, error: `Failed to create cards: ${cardsError.message}` },
+                { success: false, error: 'Failed to create cards' },
                 { status: 500 }
             )
         }
 
         return NextResponse.json({
             success: true,
-            deck: {
-                id: targetDeckId,
-                title: deckTitle,
-                cardCount: generatedDeck.cards.length,
-                isAppend: !!deckId,
-                mergedInto, // 如果合并到已有卡组，返回卡组名称
-            },
+            deckId: targetDeckId,
+            deckTitle: deckTitle,
+            cardCount: generatedDeck.cards.length,
+            mergedInto
         })
+
     } catch (error) {
-        console.error('Deck generation error:', error)
+        console.error('Generate deck error:', error)
         return NextResponse.json(
-            { success: false, error: `Failed to generate deck: ${error instanceof Error ? error.message : 'Unknown'}` },
+            { success: false, error: 'Failed to generate deck' },
             { status: 500 }
         )
     }

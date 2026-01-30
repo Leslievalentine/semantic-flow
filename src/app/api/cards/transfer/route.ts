@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 // 转移单个卡片到另一个 deck
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
         const { cardId, targetDeckId } = body as {
             cardId: string
@@ -17,16 +28,32 @@ export async function POST(request: NextRequest) {
             )
         }
 
-        // 验证目标 deck 存在
+        // 验证卡片属于当前用户
+        const { data: existingCard, error: cardCheckError } = await supabase
+            .from('cards')
+            .select('id')
+            .eq('id', cardId)
+            .eq('user_id', currentUser.id)
+            .single()
+
+        if (cardCheckError || !existingCard) {
+            return NextResponse.json(
+                { success: false, error: 'Card not found or access denied' },
+                { status: 404 }
+            )
+        }
+
+        // 验证目标 deck 存在且属于当前用户
         const { data: targetDeck, error: deckError } = await supabase
             .from('decks')
             .select('id, title')
             .eq('id', targetDeckId)
+            .eq('user_id', currentUser.id)
             .single()
 
         if (deckError || !targetDeck) {
             return NextResponse.json(
-                { success: false, error: 'Target deck not found' },
+                { success: false, error: 'Target deck not found or access denied' },
                 { status: 404 }
             )
         }
@@ -36,6 +63,7 @@ export async function POST(request: NextRequest) {
             .from('cards')
             .update({ deck_id: targetDeckId })
             .eq('id', cardId)
+            .eq('user_id', currentUser.id)
             .select()
             .single()
 

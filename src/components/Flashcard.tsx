@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Loader2, RefreshCw, Quote, ChevronLeft, ChevronRight, AlertTriangle, Lightbulb, CheckCircle } from 'lucide-react'
+import { Send, Loader2, RefreshCw, Quote, ChevronLeft, ChevronRight, AlertTriangle, Lightbulb, CheckCircle, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Card } from '@/lib/supabase'
@@ -340,6 +340,36 @@ export function Flashcard({
                             <p className="text-sm uppercase tracking-widest text-secondary font-medium">
                                 {card.context_hint}
                             </p>
+                        )}
+
+                        {/* Mastery Status Indicator */}
+                        {card.mastery_level && (
+                            <div className="flex items-center justify-center gap-2 mb-4">
+                                {card.mastery_level === 'new' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                                        <Circle className="w-3 h-3" />
+                                        新卡片
+                                    </span>
+                                )}
+                                {card.mastery_level === 'red' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-red-50 text-red-700 border border-red-200">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        需强化
+                                    </span>
+                                )}
+                                {card.mastery_level === 'yellow' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+                                        <Lightbulb className="w-3 h-3" />
+                                        巩固中
+                                    </span>
+                                )}
+                                {card.mastery_level === 'green' && (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        <CheckCircle className="w-3 h-3" />
+                                        已掌握
+                                    </span>
+                                )}
+                            </div>
                         )}
 
                         {/* Chinese Concept */}

@@ -1,8 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { Flashcard } from '@/components/Flashcard'
+import { AuthGuard } from '@/components/AuthGuard'
+import { getCurrentUser, signOut } from '@/lib/auth'
+import { User } from '@supabase/supabase-js'
 import {
   GenerateDeckDialog,
   AddCardsDialog,
@@ -40,6 +44,7 @@ interface DailyProgressData {
 }
 
 export default function Home() {
+  const [user, setUser] = useState<User | null>(null)
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null)
   const [cards, setCards] = useState<Card[]>([])
@@ -68,9 +73,58 @@ export default function Home() {
   })
 
   const [flashcardKey, setFlashcardKey] = useState(0)
+  const [forcedCardId, setForcedCardId] = useState<string | null>(null)
+  const searchParams = useSearchParams()
 
   const targetDeck = decks.find(d => d.id === targetDeckId)
   const currentCard = cards[currentCardIndex] || null
+
+  // 加载用户信息
+  useEffect(() => {
+    getCurrentUser().then(setUser)
+  }, [])
+
+  // 处理 ?cardId=xxx 参数 (从 Knowledge Vault 跳转过来的强制练习)
+  useEffect(() => {
+    const cardId = searchParams.get('cardId')
+    if (cardId) {
+      setForcedCardId(cardId)
+      loadForcedCard(cardId)
+    }
+  }, [searchParams])
+
+  const loadForcedCard = async (cardId: string) => {
+    setIsLoading(true)
+    try {
+      const response = await fetch(`/api/vault/card/${cardId}`)
+      const data = await response.json()
+      if (data.success && data.card) {
+        // 设置这张卡片为唯一卡片
+        const forcedCard: Card = {
+          id: data.card.id,
+          deck_id: data.card.deck_id,
+          chinese_concept: data.card.chinese_concept,
+          context_hint: data.card.context_hint,
+          anchor_data: data.card.anchor_data,
+          created_at: data.card.created_at
+        }
+        setCards([forcedCard])
+        setCurrentCardIndex(0)
+        setSelectedDeckId(data.card.deck_id)
+        setFlashcardKey(prev => prev + 1)
+      }
+    } catch (error) {
+      console.error('Failed to load forced card:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // 登出处理
+  const handleSignOut = async () => {
+    await signOut()
+    window.location.href = '/auth/login'
+  }
 
   // 加载持久化数据
   useEffect(() => {
@@ -164,11 +218,12 @@ export default function Home() {
     setFlashcardKey(prev => prev + 1)
 
     try {
-      const response = await fetch(`/api/cards/${deckId}`)
+      const response = await fetch(`/api/cards/smart?deckId=${deckId}`)
       const data = await response.json()
       if (data.success) {
         setCards(data.cards)
         if (savedIndex >= data.cards.length) setCurrentCardIndex(0)
+        console.log(`Smart cards loaded: ${data.stats.due} due, ${data.stats.new} new`)
       } else {
         setCards([])
         setCurrentCardIndex(0)
@@ -466,151 +521,155 @@ export default function Home() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <Sidebar
-        decks={decks}
-        selectedDeckId={selectedDeckId}
-        onSelectDeck={handleSelectDeck}
-        onCreateDeck={openCreateDeck}
-        onAddCardsToDeck={openAddCardsDialog}
-        onUploadCard={openUploadDialog}
-        onMergeDeck={openMergeDialog}
-        onRenameDeck={openRenameDialog}
-        onDeleteDeck={openDeleteDialog}
-        onReorderDecks={handleReorderDecks}
-        deckProgress={deckProgress}
-        dailyProgress={displayDailyProgress}
-        isCollapsed={isSidebarCollapsed}
-        onToggleCollapse={toggleSidebar}
-      />
-
-      <main className="flex-1 flex flex-col bg-background overflow-hidden">
-        <Flashcard
-          key={`${selectedDeckId}-${currentCardIndex}-${flashcardKey}`}
-          card={currentCard}
-          onSubmit={handleSubmitEvaluation}
-          onNextCard={handleNextCard}
-          onPrevCard={handlePrevCard}
-          currentIndex={currentCardIndex}
-          totalCards={cards.length}
-          isLoading={isLoading}
-          onTransferCard={openTransferCardDialog}
+    <AuthGuard>
+      <div className="flex h-screen overflow-hidden">
+        <Sidebar
+          decks={decks}
+          selectedDeckId={selectedDeckId}
+          onSelectDeck={handleSelectDeck}
+          onCreateDeck={openCreateDeck}
+          onAddCardsToDeck={openAddCardsDialog}
+          onUploadCard={openUploadDialog}
+          onMergeDeck={openMergeDialog}
+          onRenameDeck={openRenameDialog}
+          onDeleteDeck={openDeleteDialog}
+          onReorderDecks={handleReorderDecks}
+          deckProgress={deckProgress}
+          dailyProgress={displayDailyProgress}
+          isCollapsed={isSidebarCollapsed}
+          onToggleCollapse={toggleSidebar}
+          user={user}
+          onSignOut={handleSignOut}
         />
 
-        {cards.length > 0 && (
-          <div className="p-4 border-t border-border bg-card/50">
-            <div className="max-w-3xl mx-auto space-y-2">
-              {/* 进度条 */}
-              <div className="relative h-2 bg-border rounded-full overflow-hidden">
-                <div
-                  className="absolute inset-y-0 left-0 bg-secondary transition-all duration-300 ease-out rounded-full"
-                  style={{ width: `${((currentCardIndex + 1) / cards.length) * 100}%` }}
-                />
-              </div>
+        <main className="flex-1 flex flex-col bg-background overflow-hidden">
+          <Flashcard
+            key={`${selectedDeckId}-${currentCardIndex}-${flashcardKey}`}
+            card={currentCard}
+            onSubmit={handleSubmitEvaluation}
+            onNextCard={handleNextCard}
+            onPrevCard={handlePrevCard}
+            currentIndex={currentCardIndex}
+            totalCards={cards.length}
+            isLoading={isLoading}
+            onTransferCard={openTransferCardDialog}
+          />
 
-              {/* 导航控制 */}
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">
-                  Card {currentCardIndex + 1} of {cards.length}
-                </span>
+          {cards.length > 0 && (
+            <div className="p-4 border-t border-border bg-card/50">
+              <div className="max-w-3xl mx-auto space-y-2">
+                {/* 进度条 */}
+                <div className="relative h-2 bg-border rounded-full overflow-hidden">
+                  <div
+                    className="absolute inset-y-0 left-0 bg-secondary transition-all duration-300 ease-out rounded-full"
+                    style={{ width: `${((currentCardIndex + 1) / cards.length) * 100}%` }}
+                  />
+                </div>
 
-                {/* 页码跳转 */}
-                <div className="flex items-center gap-2">
-                  <span className="text-muted-foreground text-xs">Go to:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={cards.length}
-                    defaultValue={currentCardIndex + 1}
-                    key={currentCardIndex}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const target = parseInt((e.target as HTMLInputElement).value)
+                {/* 导航控制 */}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Card {currentCardIndex + 1} of {cards.length}
+                  </span>
+
+                  {/* 页码跳转 */}
+                  <div className="flex items-center gap-2">
+                    <span className="text-muted-foreground text-xs">Go to:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={cards.length}
+                      defaultValue={currentCardIndex + 1}
+                      key={currentCardIndex}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          const target = parseInt((e.target as HTMLInputElement).value)
+                          if (target >= 1 && target <= cards.length) {
+                            handleCardChange(target - 1)
+                          }
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const target = parseInt(e.target.value)
                         if (target >= 1 && target <= cards.length) {
                           handleCardChange(target - 1)
                         }
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const target = parseInt(e.target.value)
-                      if (target >= 1 && target <= cards.length) {
-                        handleCardChange(target - 1)
-                      }
-                    }}
-                    className="w-14 px-2 py-1 text-center text-sm border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-secondary"
-                  />
-                  <span className="text-muted-foreground text-xs">/ {cards.length}</span>
+                      }}
+                      className="w-14 px-2 py-1 text-center text-sm border border-border rounded bg-background focus:outline-none focus:ring-1 focus:ring-secondary"
+                    />
+                    <span className="text-muted-foreground text-xs">/ {cards.length}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
-      </main>
+          )}
+        </main>
 
-      {/* Dialogs */}
-      <GenerateDeckDialog
-        open={isGenerateDialogOpen}
-        onOpenChange={setIsGenerateDialogOpen}
-        onGenerate={handleGenerateDeck}
-      />
+        {/* Dialogs */}
+        <GenerateDeckDialog
+          open={isGenerateDialogOpen}
+          onOpenChange={setIsGenerateDialogOpen}
+          onGenerate={handleGenerateDeck}
+        />
 
-      <AddCardsDialog
-        open={isAddCardsDialogOpen}
-        onOpenChange={setIsAddCardsDialogOpen}
-        deckId={targetDeckId}
-        deckTitle={targetDeck?.title || ''}
-        onAddCards={handleAddCardsToDeck}
-      />
+        <AddCardsDialog
+          open={isAddCardsDialogOpen}
+          onOpenChange={setIsAddCardsDialogOpen}
+          deckId={targetDeckId}
+          deckTitle={targetDeck?.title || ''}
+          onAddCards={handleAddCardsToDeck}
+        />
 
-      <UploadCardDialog
-        open={isUploadDialogOpen}
-        onOpenChange={setIsUploadDialogOpen}
-        deckId={targetDeckId}
-        deckTitle={targetDeck?.title || ''}
-        decks={decks}
-        onUpload={handleUploadCard}
-      />
+        <UploadCardDialog
+          open={isUploadDialogOpen}
+          onOpenChange={setIsUploadDialogOpen}
+          deckId={targetDeckId}
+          deckTitle={targetDeck?.title || ''}
+          decks={decks}
+          onUpload={handleUploadCard}
+        />
 
-      <MergeDeckDialog
-        open={isMergeDialogOpen}
-        onOpenChange={setIsMergeDialogOpen}
-        sourceDeckId={targetDeckId}
-        sourceDeckTitle={targetDeck?.title || ''}
-        decks={decks}
-        onMerge={handleMergeDeck}
-      />
+        <MergeDeckDialog
+          open={isMergeDialogOpen}
+          onOpenChange={setIsMergeDialogOpen}
+          sourceDeckId={targetDeckId}
+          sourceDeckTitle={targetDeck?.title || ''}
+          decks={decks}
+          onMerge={handleMergeDeck}
+        />
 
-      <RenameDeckDialog
-        open={isRenameDialogOpen}
-        onOpenChange={setIsRenameDialogOpen}
-        deckId={targetDeckId}
-        currentTitle={targetDeck?.title || ''}
-        onRename={handleRenameDeck}
-      />
+        <RenameDeckDialog
+          open={isRenameDialogOpen}
+          onOpenChange={setIsRenameDialogOpen}
+          deckId={targetDeckId}
+          currentTitle={targetDeck?.title || ''}
+          onRename={handleRenameDeck}
+        />
 
-      <DeleteDeckDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        deckId={targetDeckId}
-        deckTitle={targetDeck?.title || ''}
-        cardCount={targetDeck?.card_count || 0}
-        onDelete={handleDeleteDeck}
-      />
+        <DeleteDeckDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          deckId={targetDeckId}
+          deckTitle={targetDeck?.title || ''}
+          cardCount={targetDeck?.card_count || 0}
+          onDelete={handleDeleteDeck}
+        />
 
-      <CreateEmptyDeckDialog
-        open={isCreateEmptyDialogOpen}
-        onOpenChange={setIsCreateEmptyDialogOpen}
-        onCreate={handleCreateEmptyDeck}
-      />
+        <CreateEmptyDeckDialog
+          open={isCreateEmptyDialogOpen}
+          onOpenChange={setIsCreateEmptyDialogOpen}
+          onCreate={handleCreateEmptyDeck}
+        />
 
-      <TransferCardDialog
-        open={isTransferCardDialogOpen}
-        onOpenChange={setIsTransferCardDialogOpen}
-        cardId={transferCardId}
-        currentDeckId={selectedDeckId}
-        decks={decks}
-        onTransfer={handleTransferCard}
-      />
-    </div>
+        <TransferCardDialog
+          open={isTransferCardDialogOpen}
+          onOpenChange={setIsTransferCardDialogOpen}
+          cardId={transferCardId}
+          currentDeckId={selectedDeckId}
+          decks={decks}
+          onTransfer={handleTransferCard}
+        />
+      </div>
+    </AuthGuard>
   )
 }

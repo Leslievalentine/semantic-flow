@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { deepseek, MODEL_NAME, SEMANTIC_JUDGE_PROMPT, EvaluationResult } from '@/lib/ai'
-import { supabase, AnchorItem } from '@/lib/supabase'
+import { AnchorItem } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/server-auth'
 
 // 评估结果 Schema
 const EvaluationSchema = z.object({
@@ -16,30 +17,59 @@ const EvaluationSchema = z.object({
     }),
 })
 
-// SIP 算法：根据评分更新复习参数
+// SIP 算法：根据评分更新复习参数（改进版）
 function calculateSIPUpdate(
     currentEaseFactor: number,
     currentInterval: number,
     score: number
-): { newEaseFactor: number; newInterval: number } {
-    if (score >= 8) {
-        // PASS: 增加 EF，延长间隔
-        const newEaseFactor = currentEaseFactor + 0.1
-        const newInterval = currentInterval === 0 ? 1 : Math.round(currentInterval * newEaseFactor)
-        return { newEaseFactor, newInterval }
-    } else if (score >= 5) {
-        // REVIEW: 减少 EF，间隔设为 1 天
-        const newEaseFactor = Math.max(1.3, currentEaseFactor - 0.2)
-        return { newEaseFactor, newInterval: 1 }
+): { newEaseFactor: number; newInterval: number; state: 'new' | 'learning' | 'review' } {
+    // 限制 ease factor 范围
+    const clampEF = (ef: number) => Math.min(3.0, Math.max(1.3, ef))
+
+    if (score < 5) {
+        // 🔴 不及格：间隔清零，明天强制复习
+        const newEaseFactor = clampEF(currentEaseFactor - 0.3)
+        return {
+            newEaseFactor,
+            newInterval: 0,  // 0 表示明天复习
+            state: 'learning'
+        }
+    } else if (score < 8) {
+        // 🟡 及格但需巩固：短期复习（1-3天）
+        const newEaseFactor = clampEF(currentEaseFactor - 0.1)
+        // 间隔缩短或保持在 1-3 天
+        const newInterval = Math.max(1, Math.min(3, Math.round(currentInterval * 0.5)))
+        return {
+            newEaseFactor,
+            newInterval,
+            state: 'learning'
+        }
     } else {
-        // FAIL: 减少 EF，间隔清零
-        const newEaseFactor = Math.max(1.3, currentEaseFactor - 0.2)
-        return { newEaseFactor, newInterval: 0 }
+        // 🟢 精通：延长间隔，推向未来
+        const newEaseFactor = clampEF(currentEaseFactor + 0.1)
+        // 首次或从 0 开始的话设为 1 天，否则按 EF 递增
+        const newInterval = currentInterval === 0 ? 1 : Math.round(currentInterval * newEaseFactor)
+        return {
+            newEaseFactor,
+            newInterval: Math.min(365, newInterval),  // 最长 1 年
+            state: 'review'
+        }
     }
 }
 
 export async function POST(request: NextRequest) {
     try {
+        const supabase = await createServerSupabaseClient()
+        // 验证用户认证
+        const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser()
+
+        if (authError || !currentUser) {
+            return NextResponse.json(
+                { success: false, error: 'Unauthorized' },
+                { status: 401 }
+            )
+        }
+
         const body = await request.json()
         const { userSentence, cardId, anchorData, chineseConcept } = body as {
             userSentence: string
@@ -94,7 +124,7 @@ ${userSentence}
 
         console.log('Evaluation result:', evaluation)
 
-        // 如果提供了卡片 ID，更新复习记录（需要用户认证）
+        // 更新或创建复习记录
         if (cardId) {
             try {
                 // 获取现有复习记录
@@ -102,43 +132,123 @@ ${userSentence}
                     .from('reviews')
                     .select('*')
                     .eq('card_id', cardId)
+                    .eq('user_id', currentUser.id)
                     .single()
+
+                const score = evaluation.judgment.score
 
                 if (existingReview) {
                     // 计算新的 SRS 参数
-                    const { newEaseFactor, newInterval } = calculateSIPUpdate(
+                    const { newEaseFactor, newInterval, state } = calculateSIPUpdate(
                         existingReview.ease_factor,
                         existingReview.interval,
-                        evaluation.judgment.score
+                        score
                     )
 
                     // 计算下次复习时间
                     const nextReviewAt = new Date()
                     if (newInterval > 0) {
                         nextReviewAt.setDate(nextReviewAt.getDate() + newInterval)
+                    } else {
+                        // interval = 0 意味着明天复习
+                        nextReviewAt.setDate(nextReviewAt.getDate() + 1)
                     }
 
                     // 更新复习记录
-                    await supabase
+                    const { error: updateError } = await supabase
                         .from('reviews')
                         .update({
                             ease_factor: newEaseFactor,
                             interval: newInterval,
                             next_review_at: nextReviewAt.toISOString(),
-                            state: newInterval === 0 ? 'learning' : 'review',
+                            state: state,
                             last_reviewed_at: new Date().toISOString(),
+                            last_score: score,
+                            last_user_input: userSentence,
+                            last_feedback: evaluation.feedback,
                         })
                         .eq('id', existingReview.id)
+
+                    if (updateError) {
+                        console.error('Failed to update review:', updateError)
+                        return NextResponse.json({
+                            success: true,
+                            evaluation: evaluation,
+                            dbStatus: 'update_failed',
+                            dbError: updateError.message,
+                        })
+                    } else {
+                        console.log(`Review updated: interval=${newInterval}, next=${nextReviewAt.toDateString()}`)
+                        return NextResponse.json({
+                            success: true,
+                            evaluation: evaluation,
+                            dbStatus: 'updated',
+                        })
+                    }
+                } else {
+                    // 创建新的复习记录
+                    const { newEaseFactor, newInterval, state } = calculateSIPUpdate(
+                        2.5,  // 初始 ease factor
+                        0,    // 初始 interval
+                        score
+                    )
+
+                    const nextReviewAt = new Date()
+                    if (newInterval > 0) {
+                        nextReviewAt.setDate(nextReviewAt.getDate() + newInterval)
+                    } else {
+                        nextReviewAt.setDate(nextReviewAt.getDate() + 1)
+                    }
+
+                    const { error: insertError } = await supabase
+                        .from('reviews')
+                        .insert({
+                            user_id: currentUser.id,
+                            card_id: cardId,
+                            ease_factor: newEaseFactor,
+                            interval: newInterval,
+                            next_review_at: nextReviewAt.toISOString(),
+                            state: state,
+                            last_reviewed_at: new Date().toISOString(),
+                            last_score: score,
+                            last_user_input: userSentence,
+                            last_feedback: evaluation.feedback,
+                        })
+
+                    if (insertError) {
+                        console.error('Failed to insert review:', insertError)
+                        // 临时调试：记录错误
+                        return NextResponse.json({
+                            success: true,
+                            evaluation: evaluation,
+                            dbStatus: 'insert_failed',
+                            dbError: insertError.message,
+                        })
+                    } else {
+                        console.log(`Review created: interval=${newInterval}, next=${nextReviewAt.toDateString()}`)
+                        return NextResponse.json({
+                            success: true,
+                            evaluation: evaluation,
+                            dbStatus: 'created',
+                        })
+                    }
                 }
             } catch (dbError) {
                 console.error('Database update error:', dbError)
-                // 即使数据库更新失败，也返回评估结果
+                // 临时调试：记录错误
+                return NextResponse.json({
+                    success: true,
+                    evaluation: evaluation,
+                    dbStatus: 'exception',
+                    dbError: dbError instanceof Error ? dbError.message : 'Unknown',
+                })
             }
         }
 
         return NextResponse.json({
             success: true,
             evaluation: evaluation,
+            dbStatus: 'skipped_no_cardId',
         })
     } catch (error) {
         console.error('Evaluation error:', error)
