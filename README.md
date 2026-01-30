@@ -2,6 +2,7 @@
 
 > **AI 驱动的英语写作训练应用** — 用语义间隔法提升你的地道表达
 
+[![Live Demo](https://img.shields.io/badge/Demo-semantic--flow.vercel.app-blue)](https://semantic-flow.vercel.app)
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
 [![Next.js](https://img.shields.io/badge/Next.js-16-black)](https://nextjs.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3ECF8E)](https://supabase.com/)
