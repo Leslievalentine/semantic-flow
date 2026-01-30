@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Sidebar } from '@/components/Sidebar'
 import { Flashcard } from '@/components/Flashcard'
@@ -43,7 +43,27 @@ interface DailyProgressData {
   completedCards: string[]
 }
 
+// Loading fallback for Suspense
+function HomeLoading() {
+  return (
+    <div className="min-h-screen bg-paper flex items-center justify-center">
+      <div className="text-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-muted-foreground font-serif">Loading...</p>
+      </div>
+    </div>
+  )
+}
+
 export default function Home() {
+  return (
+    <Suspense fallback={<HomeLoading />}>
+      <HomeContent />
+    </Suspense>
+  )
+}
+
+function HomeContent() {
   const [user, setUser] = useState<User | null>(null)
   const [decks, setDecks] = useState<Deck[]>([])
   const [selectedDeckId, setSelectedDeckId] = useState<string | null>(null)
