@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Send, Loader2, RefreshCw, Quote, ChevronLeft, ChevronRight, AlertTriangle, Lightbulb, CheckCircle, Circle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
+import ReactMarkdown from 'react-markdown'
 import { Card } from '@/lib/supabase'
 import { EvaluationResult } from '@/lib/ai'
 import { DiffView } from './DiffView'
@@ -148,9 +149,16 @@ function AIVerdict({ evaluation }: { evaluation: EvaluationResult }) {
                 <h4 className="text-xs uppercase tracking-widest text-current/60 mb-2 font-medium">
                     Coach&apos;s Feedback
                 </h4>
-                <p className="text-lg font-content italic text-current leading-relaxed border-l-2 border-current/30 pl-4">
-                    &ldquo;{evaluation.feedback.critique}&rdquo;
-                </p>
+                <div className="text-lg font-content text-current leading-relaxed border-l-2 border-current/30 pl-4">
+                    <ReactMarkdown
+                        components={{
+                            strong: ({ node, ...props }: any) => <span className="font-bold text-current/90" {...props} />,
+                            p: ({ node, ...props }: any) => <p className="mb-2 last:mb-0" {...props} />,
+                        }}
+                    >
+                        {evaluation.feedback.critique}
+                    </ReactMarkdown>
+                </div>
             </div>
 
             {/* Gap Analysis - Improvement Suggestions - 突出显示 */}
