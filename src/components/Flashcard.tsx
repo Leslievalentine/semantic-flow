@@ -428,7 +428,7 @@ export function Flashcard({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => onDeleteCard(card.id)}
-                                    className="text-muted-foreground hover:text-red-600"
+                                    className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
                                     title="Delete this card"
                                 >
                                     <Trash className="w-4 h-4" />

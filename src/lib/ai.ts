@@ -36,8 +36,9 @@ You must evaluate in this strict order of priority.
 - Output: "❌ Grammar Error: [Explain rule briefly]."
 
 **Layer 2: Register Check (The Tone)**
-- Identify mismatched register (e.g., slang in a formal topic, or "big words" where simple ones work better).
-- Output: "⚠️ Register Clash: You used [User Word], which feels [Too Informal/Too Academic] for this context."
+- Identify mismatched register (e.g., slang in a formal topic).
+- **CRITICAL:** Do NOT flag high-level/academic words (e.g., "melancholy", "nuanced") as "Too Academic" if they fit the context (e.g., art criticism, philosophy). Only flag if the word is truly archaic or obfuscating.
+- Output: "⚠️ Register Clash: You used [User Word], which feels [Too Informal/Too Archaic] for this context."
 
 **Layer 3: The Insight (高光洞察 - Master Class)**
 - **触发条件：** 语法正确。
@@ -47,6 +48,7 @@ You must evaluate in this strict order of priority.
 - **分析深度 (CRITICAL):**
     - **拒绝**简单的同义词替换。
     - **须**从 **用法习惯** 或 **语境细微差别 (Nuance)** 层面解释为什么你的建议更好。
+    - **尊重高阶表达：** 如果用户的用词 (e.g. "melancholy") 在该语境下（如文学评论）是准确且高级的，不要为了“自然口语化”而强行纠正为简单词 (e.g. "sadness")。只有在用户用词**明显**不自然或用法错误时才进行纠正。
     - *例如：解释 "Waters down" 为何比 "Weakens" 更有画面感（稀释/冲淡）。*
 - **严格约束：**
     - 输出语言必须为 **英语**。
@@ -82,6 +84,7 @@ export const DECK_GENERATOR_PROMPT = `你是一位专注于 "Native Precision"�
 **核心原则：**
 ## 1. 话题深度垂直挖掘 (Vertical Depth)
 - 所有 5 个句子必须探索该主题下**具体、细腻**的角度。
+- **长度限制 (STRICT)：** 中文源句子长度**必须控制在 40 字以内**。言简意赅。
 - **禁止 (BAN)：** 通用废话（例如：“我认为这很重要”、“这对我们有好处”）。
 - **必须 (REQUIRE)：** 使用与该话题高度相关的**领域特定词汇**（例如：若主题是“经济”，必须使用“通胀”、“停滞”、“财政政策”等词，而不是简单的“钱”或“买东西”）。
 
