@@ -3,6 +3,7 @@
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Play, BookOpen } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 interface AnchorItem {
     text: string
@@ -185,15 +186,23 @@ export default function CardDetailPage({ params }: { params: Promise<{ cardId: s
                         <div className="space-y-4">
                             <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-400">
                                 <p className="text-sm font-semibold text-amber-700 mb-1">Critique</p>
-                                <p className="text-gray-700 font-serif italic">
-                                    "{review.last_feedback.critique}"
-                                </p>
+                                <div className="text-gray-700 font-serif italic text-sm space-y-2">
+                                    <ReactMarkdown components={{
+                                        strong: ({ node, ...props }) => <span className="font-bold text-amber-900" {...props} />
+                                    }}>
+                                        {review.last_feedback.critique}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                             <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-400">
                                 <p className="text-sm font-semibold text-blue-700 mb-1">How to Improve</p>
-                                <p className="text-gray-700">
-                                    {review.last_feedback.gap_analysis}
-                                </p>
+                                <div className="text-gray-700 text-sm space-y-1">
+                                    <ReactMarkdown components={{
+                                        strong: ({ node, ...props }) => <span className="font-bold text-blue-900" {...props} />
+                                    }}>
+                                        {review.last_feedback.gap_analysis}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                         </div>
                     </section>

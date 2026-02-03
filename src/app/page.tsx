@@ -479,6 +479,43 @@ function HomeContent() {
     }
   }
 
+  // 卡片删除
+  const handleDeleteCard = async (cardId: string): Promise<boolean> => {
+    if (!confirm('Are you sure you want to delete this card? This action cannot be undone.')) {
+      return false
+    }
+
+    try {
+      const response = await fetch(`/api/cards/manage?id=${cardId}`, {
+        method: 'DELETE',
+      })
+      const data = await response.json()
+      if (data.success) {
+        // 从当前卡片列表中移除删除的卡片
+        const newCards = cards.filter(c => c.id !== cardId)
+        setCards(newCards)
+
+        // 调整当前索引
+        if (currentCardIndex >= newCards.length) {
+          setCurrentCardIndex(Math.max(0, newCards.length - 1))
+        } else {
+          // 如果不是最后一张，索引不变，但 key 变了，强制刷新
+          setFlashcardKey(prev => prev + 1)
+        }
+
+        // 更新 Deck 计数
+        fetchDecks()
+
+        return true
+      }
+      return false
+    } catch (error) {
+      console.error('Failed to delete card:', error)
+      return false
+    }
+  }
+
+
   // Deck 排序
   const handleReorderDecks = useCallback((newOrder: string[]) => {
     // 保存新顺序到 localStorage
@@ -573,6 +610,7 @@ function HomeContent() {
             totalCards={cards.length}
             isLoading={isLoading}
             onTransferCard={openTransferCardDialog}
+            onDeleteCard={handleDeleteCard}
           />
 
           {cards.length > 0 && (

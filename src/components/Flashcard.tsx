@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Send, Loader2, RefreshCw, Quote, ChevronLeft, ChevronRight, AlertTriangle, Lightbulb, CheckCircle, Circle } from 'lucide-react'
+import { Send, Loader2, RefreshCw, Quote, ChevronLeft, ChevronRight, AlertTriangle, Lightbulb, CheckCircle, Circle, Trash } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import ReactMarkdown from 'react-markdown'
@@ -18,6 +18,7 @@ interface FlashcardProps {
     totalCards: number
     isLoading?: boolean
     onTransferCard?: () => void
+    onDeleteCard?: (cardId: string) => void
 }
 
 type FlashcardState = 'idle' | 'input' | 'evaluating' | 'result'
@@ -188,7 +189,8 @@ export function Flashcard({
     currentIndex,
     totalCards,
     isLoading,
-    onTransferCard
+    onTransferCard,
+    onDeleteCard
 }: FlashcardProps) {
     const [state, setState] = useState<FlashcardState>('idle')
     const [userInput, setUserInput] = useState('')
@@ -412,12 +414,24 @@ export function Flashcard({
                                     variant="ghost"
                                     size="sm"
                                     onClick={onTransferCard}
-                                    className="text-muted-foreground"
+                                    className="text-muted-foreground hover:text-primary"
                                     title="Transfer to another deck"
                                 >
                                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                     </svg>
+                                </Button>
+                            )}
+
+                            {onDeleteCard && (
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => onDeleteCard(card.id)}
+                                    className="text-muted-foreground hover:text-red-600"
+                                    title="Delete this card"
+                                >
+                                    <Trash className="w-4 h-4" />
                                 </Button>
                             )}
 
@@ -585,6 +599,17 @@ export function Flashcard({
                                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                                 </svg>
+                            </Button>
+                        )}
+
+                        {onDeleteCard && (
+                            <Button
+                                onClick={() => onDeleteCard(card.id)}
+                                variant="outline"
+                                className="px-4 py-4 rounded-lg text-muted-foreground hover:text-red-600 hover:border-red-200 hover:bg-red-50"
+                                title="Delete this card"
+                            >
+                                <Trash className="w-4 h-4" />
                             </Button>
                         )}
                         {/* Refresh 按钮 - 重置卡片状态 */}
