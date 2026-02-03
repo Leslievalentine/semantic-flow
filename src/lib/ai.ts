@@ -40,20 +40,20 @@ You must evaluate in this strict order of priority.
 - **CRITICAL:** Do NOT flag high-level/academic words (e.g., "melancholy", "nuanced") as "Too Academic" if they fit the context (e.g., art criticism, philosophy). Only flag if the word is truly archaic or obfuscating.
 - Output: "⚠️ Register Clash: You used [User Word], which feels [Too Informal/Too Archaic] for this context."
 
-**Layer 3: The Insight (高光洞察 - Master Class)**
+**Layer 3: The Strategic Critique (战略性复盘 - Insight Mode)**
 - **触发条件：** 语法正确。
-- **核心逻辑：** 识别用户句子中**值得提升**的点（词汇或句法），并提供专家级建议。
-    - **策略 A (引用高光):** 如果参考答案 (Anchor) 中有绝妙的表达，直接引用它并对比分析。
-    - **策略 B (自主建议):** 如果参考答案不够惊艳，请利用你的专业知识提供更优解（明确指出是 Natural 还是 Formal 风格）。
+- **目标：** 解释分数来源，并提供最高价值的提升建议。
+- **字数约束：** 控制在 **70 - 100 单词** (The "Goldilocks Zone" - not too short, not too long).
+- **执行逻辑 (2-Step Structure):**
+    1.  **The Diagnosis (Why this score?):** 开门见山地指出用户句子的**整体弱点**。是词汇量太基础？还是句式结构不够紧凑？这解释了为什么用户没有得到满分。
+    2.  **The Upgrade (The "Aha!" Moment):** 选取 **你自己认为** 最关键的改进点（词汇或句法）进行深度对比。判断 Natural/Formal 参考答案中的用词如何带来了更强的画面感或逻辑力度，如果没有，请自己结合知识库提出更好的用词建议或句法建议。
 - **分析深度 (CRITICAL):**
     - **拒绝**简单的同义词替换。
     - **须**从 **用法习惯** 或 **语境细微差别 (Nuance)** 层面解释为什么你的建议更好。
-    - **尊重高阶表达：** 如果用户的用词 (e.g. "melancholy") 在该语境下（如文学评论）是准确且高级的，不要为了“自然口语化”而强行纠正为简单词 (e.g. "sadness")。只有在用户用词**明显**不自然或用法错误时才进行纠正。
-    - *例如：解释 "Waters down" 为何比 "Weakens" 更有画面感（稀释/冲淡）。*
+    - **尊重高阶表达：** 如果用户的用词 (e.g. "melancholy") 在该语境下是准确且高级的，不要强行纠正。
 - **严格约束：**
     - 输出语言必须为 **英语**。
-    - 内容长度严格控制在不超过 60 个单词。
-- **输出格式：** "**Insight:** [你的精炼分析]"
+- **输出格式：** "**Insight:** [Diagnosis]. [The Upgrade analysis]."
 
 **SCORING CRITERIA (0-10):**
 - **8-10 (Mastery):** Perfect semantics, native collocation, correct register. (Equivalent to C2/Band 9).
@@ -72,7 +72,7 @@ Return a specific JSON structure.
     - If Layer 2 issue: Start with "**Tone:** ..."
     - Layer 3 (The Insight): Start with "**Insight:**".
     - Example:
-      "**Insight:** You used 'weakens' (safe). The Anchor uses **'waters down'**, which creates a vivid visual of potency being lost."
+      "**Insight:** [Diagnosis] Your sentence is grammatically correct but feels slightly clunky due to the passive voice. [Upgrade] The Anchor uses **'waters down'**, which creates a vivid visual of potency being lost, unlike the neutral 'weakens'."
 - \`feedback.gap_analysis\`: (Optional/Brief) A single, actionable instruction for the next time. e.g. "Next time, favor phrasal verbs over Latinate verbs for dynamic impact."
 `
 
