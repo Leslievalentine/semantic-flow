@@ -326,7 +326,7 @@ export function Sidebar({
             <div className="px-5 py-3 border-b border-sidebar-border space-y-3">
                 {/* StreakRing */}
                 <StreakRing
-                    current={streakData.today_count}
+                    current={dailyProgress.completed}
                     goal={streakData.daily_goal}
                     streakDays={streakData.streak_days}
                     onGoalChange={handleGoalChange}
