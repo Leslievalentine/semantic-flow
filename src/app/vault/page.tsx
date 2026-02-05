@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Brain } from 'lucide-react'
+import { ArrowLeft, Brain, Home } from 'lucide-react'
 import { StatusCard } from '@/components/StatusCard'
 
 interface VaultStats {
@@ -48,8 +48,16 @@ export default function VaultPage() {
                     <button
                         onClick={() => router.push('/')}
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Go Home"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors ml-2"
+                        title="Go Home"
+                    >
+                        <Home className="w-5 h-5 text-gray-600" />
                     </button>
                     <div className="flex items-center gap-3">
                         <Brain className="w-6 h-6 text-gray-700" />

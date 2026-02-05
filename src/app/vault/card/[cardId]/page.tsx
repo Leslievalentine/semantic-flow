@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Play, BookOpen } from 'lucide-react'
+import { ArrowLeft, Play, BookOpen, Home } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 interface AnchorItem {
@@ -111,6 +111,13 @@ export default function CardDetailPage({ params }: { params: Promise<{ cardId: s
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                     >
                         <ArrowLeft className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                        title="Go Home"
+                    >
+                        <Home className="w-5 h-5 text-gray-600" />
                     </button>
                     <div className="flex-1">
                         <h1 className="text-lg font-bold text-gray-800 font-serif">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { ArrowLeft, Loader2 } from 'lucide-react'
+import { ArrowLeft, Loader2, Home } from 'lucide-react'
 import { Flashcard } from '@/components/Flashcard'
 import { Card } from '@/lib/supabase'
 import { EvaluationResult } from '@/lib/ai'
@@ -40,36 +40,56 @@ function ReviewPageContent() {
     const fetchCards = async () => {
         setLoading(true)
         try {
-            let url = '/api/vault/cards/practice'
-            const params = new URLSearchParams()
-
             if (cardId) {
-                // Special case: Single card practice
-                url = `/api/vault/card/${cardId}`
+                // Scenario: Started from a single card.
+                // 1. Fetch details of this card to find its deckId.
+                const cardResponse = await fetch(`/api/vault/card/${cardId}`)
+                const cardData = await cardResponse.json()
+
+                if (cardData.success && cardData.card) {
+                    const deckId = cardData.card.deck_id
+
+                    // 2. Fetch all practice cards for this deck
+                    const listResponse = await fetch(`/api/vault/cards/practice?deckId=${deckId}`)
+                    const listData = await listResponse.json()
+
+                    if (listData.success && listData.cards) {
+                        const allCards = listData.cards
+                        // 3. Set cards and find index of the current card
+                        setCards(allCards)
+                        const index = allCards.findIndex((c: Card) => c.id === cardId)
+                        if (index !== -1) {
+                            setCurrentIndex(index)
+                        } else {
+                            // Should not happen if data is consistent, but fallback:
+                            // If for some reason the card isn't in the list (maybe recently reviewed and filter excluded it?), add it manually
+                            // But better to just restart index 0 if not found
+                            setCurrentIndex(0)
+                        }
+                    } else {
+                        // Fallback if list fetch fails: just show single card
+                        setCards([{
+                            id: cardData.card.id,
+                            chinese_concept: cardData.card.chinese_concept,
+                            context_hint: cardData.card.context_hint,
+                            anchor_data: cardData.card.anchor_data,
+                            deck_id: cardData.card.deck_id,
+                            created_at: cardData.card.created_at
+                        }])
+                    }
+                }
             } else {
+                // Standard scenario: Review by Level or Deck
+                let url = '/api/vault/cards/practice'
+                const params = new URLSearchParams()
                 if (level) params.append('level', level)
                 if (deckId) params.append('deckId', deckId)
-                // Add a param to request multiple cards for practice
                 url = `${url}?${params.toString()}`
-            }
 
-            const response = await fetch(url)
-            const data = await response.json()
+                const response = await fetch(url)
+                const data = await response.json()
 
-            if (data.success) {
-                if (cardId && data.card) {
-                    // Single card response structure might be different based on endpoint logic
-                    // But if we use a unified practice endpoint it would be better.
-                    // Let's assume for single card we might need to normalize
-                    setCards([{
-                        id: data.card.id,
-                        chinese_concept: data.card.chinese_concept,
-                        context_hint: data.card.context_hint,
-                        anchor_data: data.card.anchor_data,
-                        deck_id: data.card.deck_id,
-                        created_at: data.card.created_at
-                    }])
-                } else if (data.cards) {
+                if (data.success && data.cards) {
                     setCards(data.cards)
                 }
             }
@@ -189,6 +209,13 @@ function ReviewPageContent() {
                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
                     >
                         <ArrowLeft className="w-5 h-5" />
+                    </button>
+                    <button
+                        onClick={() => router.push('/')}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                        title="Go Home"
+                    >
+                        <Home className="w-5 h-5" />
                     </button>
                     <span className="font-serif text-gray-600 font-medium">
                         {level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Review'} Session

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Play } from 'lucide-react'
+import { ArrowLeft, Home } from 'lucide-react'
 import { TopicAccordion } from '@/components/TopicAccordion'
 
 interface CardItem {
@@ -111,13 +111,13 @@ export default function LevelPage({ params }: { params: Promise<{ level: string 
                         </h1>
                         <p className="text-sm text-gray-500">{config.subtitle}</p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="flex items-center gap-2">
                         <button
-                            onClick={() => router.push(`/vault/review?level=${level}`)}
-                            className="flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm"
+                            onClick={() => router.push('/')}
+                            className="p-2 hover:bg-white/50 rounded-lg transition-colors"
+                            title="Go Home"
                         >
-                            <Play className="w-4 h-4" />
-                            <span className="text-sm font-medium">Start Review Session</span>
+                            <Home className="w-5 h-5 text-gray-600" />
                         </button>
                     </div>
                 </div>
