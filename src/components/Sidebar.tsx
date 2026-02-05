@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Plus, MoreHorizontal, Sparkles, Upload, Merge, PanelLeftClose, PanelLeft, Trash2, Pencil, GripVertical, LogOut, User as UserIcon, Library } from 'lucide-react'
+import { BookOpen, Plus, MoreHorizontal, Sparkles, Upload, Merge, PanelLeftClose, PanelLeft, Trash2, Pencil, GripVertical, LogOut, User as UserIcon, Library, Database } from 'lucide-react'
 import { User } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { StreakRing } from '@/components/StreakRing'
@@ -376,6 +376,26 @@ export function Sidebar({
                         <DropdownMenuItem onClick={() => onCreateDeck('manual')}>
                             <Upload className="w-4 h-4 mr-2" />
                             Create Empty Deck
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={async () => {
+                            if (confirm('Import starter decks? This will add new decks to your library.')) {
+                                try {
+                                    const res = await fetch('/api/seed', { method: 'POST' })
+                                    const data = await res.json()
+                                    if (data.success) {
+                                        alert(data.message)
+                                        window.location.reload()
+                                    } else {
+                                        alert('Failed: ' + data.error)
+                                    }
+                                } catch (e) {
+                                    alert('Error seeding data')
+                                }
+                            }
+                        }}>
+                            <Database className="w-4 h-4 mr-2" />
+                            Import Starter Content
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
