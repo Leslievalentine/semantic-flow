@@ -10,7 +10,6 @@ export const deepseek = createDeepSeek({
 // 模型名称常量
 export const MODEL_NAME = 'deepseek-chat'
 
-// 语义光谱法官系统提示词
 // 语义光谱法官系统提示词 - 语境自适应 & 智能反馈版
 export const SEMANTIC_JUDGE_PROMPT = `You are the "Semantic Flow Judge", an elite English writing coach with the aesthetics of "The Economist".
 

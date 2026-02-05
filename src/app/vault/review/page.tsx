@@ -103,9 +103,14 @@ function ReviewPageContent() {
     const handleNextCard = () => {
         setPracticedCount(prev => prev + 1)
 
-        // If we are practicing a single card, or if we reached the end of the list
-        if (cards.length === 1 || currentIndex >= cards.length - 1) {
-            setSessionComplete(true)
+        // If only 1 card, just reload it (effective loop)
+        if (cards.length === 1) {
+            setFlashcardKey(prev => prev + 1)
+        }
+        // If at the end, loop back to start
+        else if (currentIndex >= cards.length - 1) {
+            setCurrentIndex(0)
+            setFlashcardKey(prev => prev + 1)
         } else {
             setCurrentIndex(prev => prev + 1)
             setFlashcardKey(prev => prev + 1)
@@ -204,23 +209,25 @@ function ReviewPageContent() {
             {/* Minimal Header */}
             <header className="bg-white/80 backdrop-blur-md border-b border-gray-200 px-4 py-3 sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto flex items-center justify-between">
-                    <button
-                        onClick={handleBack}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-                    >
-                        <ArrowLeft className="w-5 h-5" />
-                    </button>
-                    <button
-                        onClick={() => router.push('/')}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
-                        title="Go Home"
-                    >
-                        <Home className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={handleBack}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                        >
+                            <ArrowLeft className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={() => router.push('/')}
+                            className="p-2 hover:bg-gray-100 rounded-lg transition-colors text-gray-600"
+                            title="Go Home"
+                        >
+                            <Home className="w-5 h-5" />
+                        </button>
+                    </div>
+
                     <span className="font-serif text-gray-600 font-medium">
                         {level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Review'} Session
                     </span>
-                    <div className="w-9" /> {/* Spacer */}
                 </div>
             </header>
 
