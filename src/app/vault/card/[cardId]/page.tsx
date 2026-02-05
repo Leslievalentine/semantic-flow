@@ -74,7 +74,7 @@ export default function CardDetailPage({ params }: { params: Promise<{ cardId: s
     }
 
     const handlePractice = () => {
-        router.push(`/?cardId=${cardId}`)
+        router.push(`/vault/review?cardId=${cardId}`)
     }
 
     if (loading) {
