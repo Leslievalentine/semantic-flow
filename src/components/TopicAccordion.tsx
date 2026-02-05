@@ -121,7 +121,7 @@ export function TopicAccordion({ topics, level }: TopicAccordionProps) {
                                 {topicGroup.cards.map((card) => (
                                     <button
                                         key={card.id}
-                                        onClick={() => router.push(`/vault/review?cardId=${card.id}`)}
+                                        onClick={() => router.push(`/vault/review?cardId=${card.id}&level=${level}`)}
                                         className="
                                             w-full flex items-center justify-between
                                             px-6 py-3 text-left

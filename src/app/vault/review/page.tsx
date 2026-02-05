@@ -50,7 +50,13 @@ function ReviewPageContent() {
                     const deckId = cardData.card.deck_id
 
                     // 2. Fetch all practice cards for this deck
-                    const listResponse = await fetch(`/api/vault/cards/practice?deckId=${deckId}`)
+                    let listUrl = `/api/vault/cards/practice?deckId=${deckId}`
+                    // If level is provided in URL (which we now do from TopicAccordion), add it filter
+                    if (level) {
+                        listUrl += `&level=${level}`
+                    }
+
+                    const listResponse = await fetch(listUrl)
                     const listData = await listResponse.json()
 
                     if (listData.success && listData.cards) {
