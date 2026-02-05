@@ -10,6 +10,8 @@ interface SmartCard extends Card {
     mastery_level: MasteryLevel
     last_score: number | null
     next_review_at: string | null
+    last_user_input?: string | null
+    last_feedback?: any | null
 }
 
 // 根据分数判断掌握程度
@@ -95,7 +97,7 @@ export async function GET(request: NextRequest) {
         // 注意：我们需要知道哪些卡片被复习过，以及它们的状态
         const { data: reviews, error: reviewsError } = await supabase
             .from('reviews')
-            .select('card_id, last_score, next_review_at')
+            .select('card_id, last_score, next_review_at, last_user_input, last_feedback')
             .eq('user_id', currentUser.id)
             .in('card_id', cardsList.map(c => c.id)) // 只获取此 deck 卡片的 review
 
@@ -105,12 +107,14 @@ export async function GET(request: NextRequest) {
         }
 
         // 建立 review 映射 Map<card_id, review>
-        const reviewMap = new Map<string, { last_score: number, next_review_at: string }>()
+        const reviewMap = new Map<string, { last_score: number, next_review_at: string, last_user_input: string | null, last_feedback: any }>()
         if (reviews) {
             reviews.forEach(r => {
                 reviewMap.set(r.card_id, {
                     last_score: r.last_score,
-                    next_review_at: r.next_review_at
+                    next_review_at: r.next_review_at,
+                    last_user_input: r.last_user_input,
+                    last_feedback: r.last_feedback
                 })
             })
         }
@@ -123,14 +127,18 @@ export async function GET(request: NextRequest) {
                     ...card,
                     mastery_level: getMasteryLevel(review.last_score),
                     last_score: review.last_score,
-                    next_review_at: review.next_review_at
+                    next_review_at: review.next_review_at,
+                    last_user_input: review.last_user_input,
+                    last_feedback: review.last_feedback
                 }
             } else {
                 return {
                     ...card,
                     mastery_level: 'new', // 从未复习过
                     last_score: null,
-                    next_review_at: null
+                    next_review_at: null,
+                    last_user_input: null,
+                    last_feedback: null
                 }
             }
         })

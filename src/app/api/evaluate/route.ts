@@ -165,7 +165,7 @@ ${userSentence}
                             last_reviewed_at: new Date().toISOString(),
                             last_score: score,
                             last_user_input: userSentence,
-                            last_feedback: evaluation.feedback,
+                            last_feedback: evaluation,
                         })
                         .eq('id', existingReview.id)
 
@@ -212,7 +212,7 @@ ${userSentence}
                             last_reviewed_at: new Date().toISOString(),
                             last_score: score,
                             last_user_input: userSentence,
-                            last_feedback: evaluation.feedback,
+                            last_feedback: evaluation,
                         })
 
                     if (insertError) {

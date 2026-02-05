@@ -32,6 +32,10 @@ export interface Card {
   mastery_level?: 'new' | 'red' | 'yellow' | 'green'
   last_score?: number | null
   next_review_at?: string | null
+  last_user_input?: string | null
+  // last_feedback 类型复杂这里用 any 或 unknown 先顶替，或者 EvaluationResult (需引入)
+  // 为了避免循环依赖，先用 any
+  last_feedback?: any | null
 }
 
 export interface Review {
