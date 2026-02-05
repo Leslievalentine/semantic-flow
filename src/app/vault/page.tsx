@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, BrainCircuit, Home } from 'lucide-react'
+import { ArrowLeft, Library, Home } from 'lucide-react'
 import { StatusCard } from '@/components/StatusCard'
 
 interface VaultStats {
@@ -60,7 +60,7 @@ export default function VaultPage() {
                         <Home className="w-5 h-5 text-gray-600" />
                     </button>
                     <div className="flex items-center gap-3">
-                        <BrainCircuit className="w-6 h-6 text-gray-700" />
+                        <Library className="w-6 h-6 text-gray-700" />
                         <h1 className="text-xl font-bold text-gray-800 font-serif">
                             Smart Review
                         </h1>
@@ -146,7 +146,7 @@ export default function VaultPage() {
                 {/* Empty State */}
                 {stats && stats.total === 0 && (
                     <div className="text-center py-20 bg-white rounded-xl border border-gray-200">
-                        <BrainCircuit className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                        <Library className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                         <h3 className="text-xl font-bold text-gray-600 mb-2">
                             Your vault is empty
                         </h3>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { BookOpen, Plus, MoreHorizontal, Sparkles, Upload, Merge, PanelLeftClose, PanelLeft, Trash2, Pencil, GripVertical, LogOut, User as UserIcon, BrainCircuit } from 'lucide-react'
+import { BookOpen, Plus, MoreHorizontal, Sparkles, Upload, Merge, PanelLeftClose, PanelLeft, Trash2, Pencil, GripVertical, LogOut, User as UserIcon, Library } from 'lucide-react'
 import { User } from '@supabase/supabase-js'
 import { Button } from '@/components/ui/button'
 import { StreakRing } from '@/components/StreakRing'
@@ -343,7 +343,7 @@ export function Sidebar({
                         transition-colors group
                     "
                 >
-                    <BrainCircuit className="w-5 h-5 text-amber-600 group-hover:scale-110 transition-transform" />
+                    <Library className="w-5 h-5 text-amber-600 group-hover:scale-110 transition-transform" />
                     <div className="text-left">
                         <span className="text-sm font-semibold text-amber-800">Smart Review</span>
                         <p className="text-xs text-amber-600/70">Track your progress</p>
