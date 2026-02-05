@@ -633,7 +633,6 @@ export function Flashcard({
                     <Button
                         onClick={handleNext}
                         className="px-8 py-4 rounded-lg"
-                        disabled={currentIndex >= totalCards - 1}
                     >
                         Next Card
                         <ChevronRight className="w-4 h-4 ml-2" />
