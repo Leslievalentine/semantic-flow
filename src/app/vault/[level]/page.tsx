@@ -98,7 +98,7 @@ export default function LevelPage({ params }: { params: Promise<{ level: string 
         <div className="min-h-screen bg-[#F9F7F1]">
             {/* Header */}
             <header className={`${config.bgColor} border-b border-gray-200 px-6 py-4`}>
-                <div className="max-w-3xl mx-auto flex items-center gap-4">
+                <div className="max-w-3xl mx-auto flex items-center gap-2">
                     <button
                         onClick={() => router.push('/vault')}
                         className="p-2 hover:bg-white/50 rounded-lg transition-colors"
