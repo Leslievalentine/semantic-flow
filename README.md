@@ -11,9 +11,16 @@
 
 ---
 
-## 🆕 v2.1 更新日志 (2025-01-30)
+## 🆕 v2.2 更新日志 (2026-02-05)
 
-### 🧠 Knowledge Vault (知识库)
+### 🚀 Zero-Friction Onboarding (无感启动)
+- **数据库级自动植入 (Trigger-based Seeding)**: 新用户注册（及现有空数据用户）自动获得核心内容。
+- **预设 IELTS 高价值语料**:
+  - `Task 1: High-Value Patterns`: 包含静态图/动态图/流程图/地图等20+高频句型。
+  - `Task 2: Core Arguments`: 涵盖科技/环境/教育/社会类 40+ 核心论点。
+- **移除手动导入**: 彻底去除了前端繁琐的 "Import" 按钮，一切自动化。
+
+### 🧠 Knowledge Vault (知识库) - v2.1 (2025-01-30)
 全新的"元认知中心"，帮助用户从"做题"升级为"复盘+积累"：
 
 - **打卡光环 (Streak Ring)** — 侧边栏圆环进度条，显示今日练习进度和连续打卡天数
@@ -52,6 +59,7 @@
 ### 核心功能
 | 功能 | 描述 |
 |------|------|
+| ⚡ **即刻开练** | 注册即送雅思写作 Task 1 & 2 核心语料 |
 | 🎴 **AI 生成卡片** | 输入任意主题，DeepSeek V3 自动生成训练卡片 |
 | 📤 **上传自定义卡片** | 支持手动添加中英对照内容 |
 | 🔀 **智能合并** | 相似主题自动合并 (Jaccard 80%+ 匹配) |
@@ -73,7 +81,7 @@
 
 ```
 Frontend:   Next.js 16 + TypeScript + Tailwind CSS + Shadcn/UI
-Backend:    Supabase (PostgreSQL + RLS)
+Backend:    Supabase (PostgreSQL + RLS + Triggers)
 AI:         DeepSeek V3 (via OpenAI-compatible API)
 DnD:        @dnd-kit/core + @dnd-kit/sortable
 Auth:       Supabase Auth + @supabase/ssr
@@ -105,9 +113,10 @@ OPENAI_BASE_URL=https://api.deepseek.com
 ### 3. 初始化数据库
 在 Supabase SQL Editor 中按顺序执行：
 1. `supabase/schema-v2.sql` — 创建表结构 + RLS 策略
-2. `supabase/memory-engine-migration.sql` — 添加记忆引擎字段
-3. `supabase/vault-migration.sql` — 添加知识库字段
-4. `supabase/fix-score-type.sql` — 修复分数类型
+2. `supabase/migrations/auto_seed_trigger.sql` — **(New)** 设置自动植入语料的 Trigger
+3. `supabase/memory-engine-migration.sql` — 添加记忆引擎字段
+4. `supabase/vault-migration.sql` — 添加知识库字段
+5. `supabase/fix-score-type.sql` — 修复分数类型
 
 ### 4. 启动开发服务器
 ```bash
@@ -165,6 +174,8 @@ semantic-flow/
 │       ├── server-auth.ts   # 服务端认证
 │       └── ai.ts            # AI 接口
 ├── supabase/
+│   ├── migrations/          # 数据库迁移脚本
+│   │   └── auto_seed_trigger.sql # 自动植入逻辑
 │   ├── schema-v2.sql        # 数据库架构
 │   ├── memory-engine-migration.sql
 │   ├── vault-migration.sql
