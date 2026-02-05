@@ -1,6 +1,6 @@
 export const SEED_DATA = [
     {
-        "deck_title": "IELTS Writing Task 1: High-Value Patterns (Seed Data)",
+        "deck_title": "IELTS Writing Task 1: High-Value Patterns",
         "cards": [
             {
                 "chinese_concept": "尽管在最初三年里经历了剧烈震荡，该数字随后呈现出指数级增长。",
@@ -165,7 +165,7 @@ export const SEED_DATA = [
         ]
     },
     {
-        "deck_title": "IELTS Writing Task 2: Core Arguments (Batch 1)",
+        "deck_title": "IELTS Writing Task 2: Core Arguments",
         "cards": [
             {
                 "chinese_concept": "在大数据时代，个人隐私常被视作一种可交易的商品，而非神圣不可侵犯的权利。",
@@ -326,12 +326,7 @@ export const SEED_DATA = [
                     { "text": "This short-sighted policy is like killing the goose that lays the golden eggs—quick cash now, but no future.", "tag": "Natural" },
                     { "text": "This myopic policy is tantamount to draining the pond to catch the fish, sacrificing long-term sustainability for ephemeral gains.", "tag": "Formal" }
                 ]
-            }
-        ]
-    },
-    {
-        "deck_title": "IELTS Writing Task 2: Core Arguments (Batch 2)",
-        "cards": [
+            },
             {
                 "chinese_concept": "尽管法律禁止歧视，女性在晋升到高层管理职位时仍面临隐形障碍。",
                 "context_hint": "Work / Gender Equality (Metaphor)",
