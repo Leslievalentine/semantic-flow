@@ -35,6 +35,7 @@ interface Deck {
     id: string
     title: string
     card_count: number
+    practiced_count?: number
     is_custom: boolean
 }
 
@@ -138,9 +139,9 @@ function SortableDeckItem({
                     <span className="text-xs text-sidebar-foreground/50">
                         {deck.card_count} cards
                     </span>
-                    {hasProgress && (
+                    {(deck.practiced_count !== undefined && deck.practiced_count > 0) && (
                         <span className="text-xs text-secondary font-medium">
-                            • {progress + 1}/{deck.card_count}
+                            • {deck.practiced_count}/{deck.card_count}
                         </span>
                     )}
                     {deck.is_custom && (

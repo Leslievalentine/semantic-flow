@@ -51,17 +51,45 @@ export async function GET() {
             })
         }
 
-        // 获取每个卡组的卡片数量
+        // 获取每个卡组的卡片数量和已练习数量
         const decksWithCount = await Promise.all(
             (decks as Deck[]).map(async (deck) => {
-                const { count } = await supabase
+                // Total cards count
+                const { count: totalCount } = await supabase
                     .from('cards')
                     .select('*', { count: 'exact', head: true })
                     .eq('deck_id', deck.id)
 
+                // Practiced cards count (unique cards with reviews)
+                // We need to join with reviews, or query reviews for this deck's cards
+                // A more efficient way given Supabase constraints:
+                // Get all card IDs for this deck, then count reviews matching those IDs
+                const { data: deckCards } = await supabase
+                    .from('cards')
+                    .select('id')
+                    .eq('deck_id', deck.id)
+
+                let practicedCount = 0
+                if (deckCards && deckCards.length > 0) {
+                    const cardIds = deckCards.map(c => c.id)
+                    const { count } = await supabase
+                        .from('reviews')
+                        .select('card_id', { count: 'exact', head: true }) // head:true is efficient
+                        .eq('user_id', currentUser.id)
+                        .in('card_id', cardIds)
+                    // Note: If a user reviews the same card multiple times, it creates multiple review records?
+                    // Wait, the schema uses a unique constraint or updates existing?
+                    // Let's check api/evaluate/route.ts. It does UPDATE if exists.
+                    // So count of reviews == count of practiced cards.
+                    // Assuming one review row per card per user.
+
+                    practicedCount = count || 0
+                }
+
                 return {
                     ...deck,
-                    card_count: count || 0,
+                    card_count: totalCount || 0,
+                    practiced_count: practicedCount
                 }
             })
         )

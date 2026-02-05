@@ -450,7 +450,6 @@ export function Flashcard({
                                 variant="ghost"
                                 size="sm"
                                 onClick={handleNext}
-                                disabled={currentIndex >= totalCards - 1}
                                 className="text-muted-foreground"
                             >
                                 Next

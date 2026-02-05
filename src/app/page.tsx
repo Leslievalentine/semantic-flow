@@ -24,6 +24,7 @@ interface Deck {
   id: string
   title: string
   card_count: number
+  practiced_count?: number
   is_custom: boolean
 }
 
