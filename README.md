@@ -13,13 +13,13 @@
 
 ## 🆕 v2.2 更新日志 (2026-02-05)
 
-### 🚀 Zero-Friction Onboarding 
+###  Onboarding 
 - **数据库级自动植入 (Trigger-based Seeding)**: 新用户注册（及现有空数据用户）自动获得核心内容。
 - **预设 IELTS 高价值语料**:
   - `Task 1: High-Value Patterns`: 包含静态图/动态图/流程图/地图等20+高频句型。
   - `Task 2: Core Arguments`: 涵盖科技/环境/教育/社会类 40+ 核心论点。
 
-### 🧠 Knowledge Vault (知识库) - v2.1 (2025-01-30)
+###  Smart Review (知识库) - v2.1 (2025-01-30)
 全新的"元认知中心"，帮助用户从"做题"升级为"复盘+积累"：
 
 - **打卡光环 (Streak Ring)** — 侧边栏圆环进度条，显示今日练习进度和连续打卡天数
