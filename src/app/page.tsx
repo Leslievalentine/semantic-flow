@@ -599,22 +599,24 @@ function HomeContent() {
           onSignOut={handleSignOut}
         />
 
-        <main className="flex-1 flex flex-col bg-background overflow-hidden">
-          <Flashcard
-            key={`${selectedDeckId}-${currentCardIndex}-${flashcardKey}`}
-            card={currentCard}
-            onSubmit={handleSubmitEvaluation}
-            onNextCard={handleNextCard}
-            onPrevCard={handlePrevCard}
-            currentIndex={currentCardIndex}
-            totalCards={cards.length}
-            isLoading={isLoading}
-            onTransferCard={openTransferCardDialog}
-            onDeleteCard={handleDeleteCard}
-          />
+        <main className="flex-1 flex flex-col bg-background overflow-hidden relative">
+          <div className="flex-1 flex flex-col overflow-hidden relative min-h-0">
+            <Flashcard
+              key={`${selectedDeckId}-${currentCardIndex}-${flashcardKey}`}
+              card={currentCard}
+              onSubmit={handleSubmitEvaluation}
+              onNextCard={handleNextCard}
+              onPrevCard={handlePrevCard}
+              currentIndex={currentCardIndex}
+              totalCards={cards.length}
+              isLoading={isLoading}
+              onTransferCard={openTransferCardDialog}
+              onDeleteCard={handleDeleteCard}
+            />
+          </div>
 
           {cards.length > 0 && (
-            <div className="p-4 border-t border-border bg-card/50">
+            <div className="flex-none p-4 border-t border-border bg-card/50 z-10 relative">
               <div className="max-w-3xl mx-auto space-y-2">
                 {/* 进度条 */}
                 <div className="relative h-2 bg-border rounded-full overflow-hidden">

@@ -395,60 +395,7 @@ export function Flashcard({
                             Begin Translation
                         </Button>
 
-                        {/* Navigation */}
-                        <div className="flex items-center justify-center gap-4 pt-4">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handlePrev}
-                                disabled={currentIndex === 0}
-                                className="text-muted-foreground"
-                            >
-                                <ChevronLeft className="w-4 h-4 mr-1" />
-                                Previous
-                            </Button>
-
-                            {/* 转移按钮 */}
-                            {onTransferCard && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={onTransferCard}
-                                    className="text-muted-foreground hover:text-primary"
-                                    title="Transfer to another deck"
-                                >
-                                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-                                    </svg>
-                                </Button>
-                            )}
-
-                            {onDeleteCard && (
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => onDeleteCard(card.id)}
-                                    className="text-muted-foreground hover:text-red-600 hover:bg-red-50"
-                                    title="Delete this card"
-                                >
-                                    <Trash className="w-4 h-4" />
-                                </Button>
-                            )}
-
-                            <span className="text-sm text-muted-foreground">
-                                {currentIndex + 1} / {totalCards}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleNext}
-                                disabled={currentIndex >= totalCards - 1}
-                                className="text-muted-foreground"
-                            >
-                                Next
-                                <ChevronRight className="w-4 h-4 ml-1" />
-                            </Button>
-                        </div>
+                        {/* Navigation handled by global footer */}
                     </div>
                 </div>
             </div>
